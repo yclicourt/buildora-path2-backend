@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
+    "drf_spectacular",
     "api",
 ]
 
@@ -129,6 +130,13 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Buildora camino 2 API",
+    "DESCRIPTION": "API de referencia: React + Vite + Django + DRF, con JWT y cookie httpOnly.",
+    "VERSION": "0.1.0",
 }
 
 # Token policy, mirroring the path-1 backend: short-lived access tokens,
