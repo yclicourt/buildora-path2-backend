@@ -87,6 +87,25 @@ class AuthEndpointTests(TestCase):
         response = self.login(email="nobody@example.com")
         self.assertEqual(response.status_code, 401)
 
+    def test_login_duplicate_email_is_401_not_500(self):
+        # createsuperuser bypasses the register endpoint's unique-email
+        # check, so two users can share an email. Login must answer
+        # 401, never crash with a 500 (MultipleObjectsReturned).
+        User.objects.create_user(
+            username="first@example.com",
+            email="dup@example.com",
+            first_name="First",
+            password=STRONG_PASSWORD,
+        )
+        User.objects.create_user(
+            username="second@example.com",
+            email="dup@example.com",
+            first_name="Second",
+            password=STRONG_PASSWORD,
+        )
+        response = self.login(email="dup@example.com")
+        self.assertEqual(response.status_code, 401)
+
     def test_refresh_returns_new_access(self):
         self.register()
         refresh = self.login().json()["refresh"]
