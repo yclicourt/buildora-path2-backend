@@ -1,0 +1,50 @@
+name: CI-Django-DRF
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testing:
+    name: Testing code
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: buildora-django
+          POSTGRES_USER: buildora-django
+          POSTGRES_PASSWORD: buildora-django
+        options: >-
+          --health-cmd pg_isready -U buildora-django
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up virtual environment and install dependencies
+        run: |
+          python -m venv venv
+          ./venv/bin/pip install --upgrade pip
+          ./venv/bin/pip install -r requirements.txt
+      - name: Run Tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          POSTGRES_DB: buildora-django
+          POSTGRES_USER: buildora-django
+          POSTGRES_PASSWORD: buildora-django
+          DJANGO_SECRET_KEY: mysecretkey
+        run: |
+          ./venv/bin/python manage.py check
+          ./venv/bin/python manage.py test
