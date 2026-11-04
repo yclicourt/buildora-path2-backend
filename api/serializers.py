@@ -94,5 +94,13 @@ class LoginSerializer(TokenObtainPairSerializer):
             raise AuthenticationFailed(
                 "No active account found with the given credentials."
             )
+        except User.MultipleObjectsReturned:
+            # createsuperuser bypasses the register endpoint's
+            # unique-email check, so duplicates are possible in real
+            # data. Answer 401, never crash the login with a 500.
+            raise AuthenticationFailed(
+                "Multiple accounts use this email address; "
+                "contact an administrator."
+            )
         attrs["username"] = user.username
         return super().validate(attrs)
