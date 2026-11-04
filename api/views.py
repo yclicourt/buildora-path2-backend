@@ -1,4 +1,5 @@
-from rest_framework import status
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -19,10 +20,18 @@ from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
 class HealthView(APIView):
     """Liveness endpoint. It touches no database and requires no auth."""
 
+    @extend_schema(
+        tags=["health"],
+        responses=inline_serializer(
+            name="HealthResponse",
+            fields={"status": serializers.CharField()},
+        ),
+    )
     def get(self, request):
         return Response({"status": "ok"})
 
 
+@extend_schema(responses={201: UserSerializer})
 class RegisterView(CreateAPIView):
     """Creates a user with role ``user``. Returns the user, not tokens.
 
@@ -39,6 +48,15 @@ class RegisterView(CreateAPIView):
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    responses=inline_serializer(
+        name="TokenPairResponse",
+        fields={
+            "access": serializers.CharField(),
+            "refresh": serializers.CharField(),
+        },
+    ),
+)
 class LoginView(TokenObtainPairView):
     """Email + password login. Returns ``access`` and ``refresh`` tokens.
 
@@ -92,6 +110,16 @@ class LogoutView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=inline_serializer(
+            name="LogoutRequest",
+            fields={"refresh": serializers.CharField(required=False)},
+        ),
+        responses=inline_serializer(
+            name="LogoutResponse",
+            fields={"detail": serializers.CharField()},
+        ),
+    )
     def post(self, request):
         refresh = request.data.get("refresh") or refresh_token_from_cookie(
             request
@@ -118,6 +146,7 @@ class MeView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses=UserSerializer)
     def get(self, request):
         return Response(UserSerializer(request.user).data)
 
@@ -127,5 +156,11 @@ class AdminOnlyView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdminRole]
 
+    @extend_schema(
+        responses=inline_serializer(
+            name="AdminOnlyResponse",
+            fields={"detail": serializers.CharField()},
+        ),
+    )
     def get(self, request):
         return Response({"detail": "admin access granted"})
